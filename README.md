@@ -1,0 +1,1 @@
+# TTC-Quiz-Direct-and-Indirect-Speech-Class-7th
