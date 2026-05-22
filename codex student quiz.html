@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TTC Quiz – How I Taught My Grandmother to Read</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&family=Righteous&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+ 
+:root {
+  --blue:   #4361EE;
+  --orange: #FF6B35;
+  --lime:   #C8FF00;
+  --pink:   #FF3D8A;
+  --white:  #FFFFFF;
+  --off:    #F5F4FF;
+  --dark:   #111118;
+  --grey:   #6B6B80;
+  --light:  #EDEDF7;
+  --green:  #25D366;
+}
+ 
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--off);
+  background-image: repeating-linear-gradient(-45deg, transparent, transparent 18px, rgba(67,97,238,0.045) 18px, rgba(67,97,238,0.045) 19px);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 0;
+}
+ 
+#adOverlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity 0.6s ease;
+}
+ 
+.stage {
+  --rust:   #E8522A; --rust2:  #FF7043; --cream:  #FFF8F3; --yellow: #FFD93D;
+  --blue:   #4CC9F0; --green:  #06D6A0; --pink:   #FF6B9D; --purple: #A78BFA; --dark:   #2D2A26;
+  width: 360px; height: 640px; position: relative; overflow: hidden;
+  background: var(--cream); border-radius: 32px;
+  box-shadow: 0 0 0 4px #fff, 0 0 0 8px var(--rust), 0 30px 80px rgba(232,82,42,.3), 0 50px 120px rgba(0,0,0,.2);
+}
+ 
+canvas#particles { position: absolute; inset: 0; z-index: 60; pointer-events: none; border-radius: 32px; }
+.scene { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; z-index: 10; }
+.scene.active { opacity: 1; pointer-events: auto; }
+ 
+.s0 { background: var(--yellow); overflow: hidden; }
+.s0 .dots-bg { position: absolute; inset: 0; background-image: radial-gradient(circle, rgba(255,255,255,.55) 2px, transparent 2px); background-size: 28px 28px; }
+.hey-emoji { font-size: 72px; opacity: 0; transform: scale(0) rotate(-20deg); position: relative; z-index: 2; filter: drop-shadow(0 6px 0 rgba(0,0,0,.12)); }
+.s0.active .hey-emoji { animation: bounceIn 0.4s cubic-bezier(0.175,0.885,0.32,1.275) 0.1s forwards; }
+.hey-text { font-family: 'Fredoka One', cursive; font-size: 80px; line-height: 1; color: var(--dark); text-align: center; position: relative; z-index: 2; opacity: 0; transform: translateY(30px); text-shadow: 0 5px 0 rgba(0,0,0,.1); }
+.s0.active .hey-text { animation: adSlideUp 0.35s ease 0.35s forwards; }
+.hey-sub { font-size: 18px; font-weight: 800; color: var(--rust); letter-spacing: 1px; position: relative; z-index: 2; opacity: 0; transform: translateY(15px); margin-top: 10px; }
+.s0.active .hey-sub { animation: adSlideUp 0.3s ease 0.6s forwards; }
+.pill-row { display: flex; gap: 8px; position: relative; z-index: 2; margin-top: 20px; opacity: 0; }
+.s0.active .pill-row { animation: adFadeIn 0.3s ease 0.85s forwards; }
+.pill { background: #fff; border-radius: 50px; padding: 6px 14px; font-size: 12px; font-weight: 800; color: var(--dark); box-shadow: 0 3px 0 rgba(0,0,0,.1); }
+ 
+.s1 { background: var(--cream); overflow: hidden; }
+.s1::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 50%, rgba(232,82,42,.08) 0%, transparent 70%); }
+.cd-ring { width: 220px; height: 220px; border-radius: 50%; border: 8px solid rgba(232,82,42,.15); display: flex; align-items: center; justify-content: center; position: absolute; }
+.cd-ring-inner { width: 170px; height: 170px; border-radius: 50%; background: var(--rust); display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 0 #b33d1c, 0 12px 30px rgba(232,82,42,.4); opacity: 0; transform: scale(0); }
+.s1.active .cd-ring-inner { animation: popBounce 0.3s cubic-bezier(0.175,0.885,0.32,1.275) 0.05s forwards; }
+.cd-num { font-family: 'Fredoka One', cursive; font-size: 110px; color: #fff; line-height: 1; position: relative; z-index: 2; text-shadow: 0 4px 0 rgba(0,0,0,.2); }
+.cd-label { font-size: 14px; font-weight: 800; color: var(--rust); letter-spacing: 4px; text-transform: uppercase; position: absolute; bottom: 130px; opacity: 0; }
+.s1.active .cd-label { animation: adFadeIn 0.3s ease 0.3s forwards; }
+ 
+.s2 { background: var(--cream); overflow: hidden; }
+.s2 .burst-bg { position: absolute; inset: 0; background: conic-gradient(from 0deg,#FFD93D 0deg 30deg,transparent 30deg 60deg,#FFD93D 60deg 90deg,transparent 90deg 120deg,#FFD93D 120deg 150deg,transparent 150deg 180deg,#FFD93D 180deg 210deg,transparent 210deg 240deg,#FFD93D 240deg 270deg,transparent 270deg 300deg,#FFD93D 300deg 330deg,transparent 330deg 360deg); opacity: 0; transform: scale(0); border-radius: 50%; width: 600px; height: 600px; top: 50%; left: 50%; margin: -300px 0 0 -300px; }
+.s2.active .burst-bg { animation: burstExpand 0.5s ease 0s forwards; }
+.s2 .logo-ring { width: 100px; height: 100px; border-radius: 50%; background: var(--rust); display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 0 #b33d1c, 0 10px 24px rgba(232,82,42,.35); margin-bottom: 16px; position: relative; z-index: 2; opacity: 0; transform: scale(0) rotate(-180deg); }
+.s2.active .logo-ring { animation: spinIn 0.4s cubic-bezier(0.175,0.885,0.32,1.275) 0.15s forwards; }
+.s2 .logo-ring img { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; }
+.big-ttc { font-family: 'Fredoka One', cursive; font-size: 100px; line-height: .95; color: var(--rust); text-align: center; position: relative; z-index: 2; opacity: 0; transform: scale(0.4) rotate(-6deg); text-shadow: 0 6px 0 #b33d1c; letter-spacing: -2px; }
+.s2.active .big-ttc { animation: blastIn 0.35s cubic-bezier(0.175,0.885,0.32,1.275) 0.25s forwards; }
+.big-quiz { font-family: 'Fredoka One', cursive; font-size: 86px; line-height: .95; color: var(--dark); text-align: center; position: relative; z-index: 2; opacity: 0; transform: scale(0.4) rotate(6deg); text-shadow: 0 5px 0 rgba(0,0,0,.15); }
+.s2.active .big-quiz { animation: blastIn 0.35s cubic-bezier(0.175,0.885,0.32,1.275) 0.38s forwards; }
+.v2-tag { background: var(--green); color: #fff; font-size: 12px; font-weight: 900; letter-spacing: 2px; padding: 6px 18px; border-radius: 50px; position: relative; z-index: 2; margin-top: 14px; box-shadow: 0 4px 0 #04a87e; opacity: 0; transform: translateY(15px); }
+.s2.active .v2-tag { animation: adSlideUp 0.3s ease 0.6s forwards; }
+ 
+.s3 { background: var(--cream); padding: 30px 22px; justify-content: flex-start; padding-top: 60px; }
+.s3 .feat-title { font-family: 'Fredoka One', cursive; font-size: 28px; color: var(--dark); text-align: center; margin-bottom: 18px; opacity: 0; }
+.s3.active .feat-title { animation: adFadeIn 0.25s ease 0.05s forwards; }
+.feat-list { display: flex; flex-direction: column; gap: 11px; width: 100%; }
+.fcard { display: flex; align-items: center; gap: 14px; padding: 13px 16px; border-radius: 18px; opacity: 0; transform: translateX(-50px) scale(.95); position: relative; overflow: hidden; }
+.fcard::after { content: ''; position: absolute; inset: 0; background: rgba(255,255,255,.25); border-radius: 18px; }
+.fcard.c1 { background: #FFE8E0; box-shadow: 0 4px 0 rgba(232,82,42,.25); }
+.fcard.c2 { background: #E8F8FF; box-shadow: 0 4px 0 rgba(76,201,240,.25); }
+.fcard.c3 { background: #E8FFF8; box-shadow: 0 4px 0 rgba(6,214,160,.25); }
+.fcard.c4 { background: #FFF5E0; box-shadow: 0 4px 0 rgba(255,217,61,.4); }
+.s3.active .fcard:nth-child(1) { animation: cardBounce 0.25s cubic-bezier(0.175,0.885,0.32,1.275) 0.15s forwards; }
+.s3.active .fcard:nth-child(2) { animation: cardBounce 0.25s cubic-bezier(0.175,0.885,0.32,1.275) 0.3s forwards; }
+.s3.active .fcard:nth-child(3) { animation: cardBounce 0.25s cubic-bezier(0.175,0.885,0.32,1.275) 0.45s forwards; }
+.s3.active .fcard:nth-child(4) { animation: cardBounce 0.25s cubic-bezier(0.175,0.885,0.32,1.275) 0.6s forwards; }
+.fcard .ficon { font-size: 32px; flex-shrink: 0; position: relative; z-index: 1; }
+.fcard .finfo { flex: 1; position: relative; z-index: 1; }
+.fcard .finfo .flabel { font-size: 11px; font-weight: 700; color: rgba(45,42,38,.4); text-transform: uppercase; letter-spacing: 1px; }
+.fcard .finfo .fval { font-size: 16px; font-weight: 900; color: var(--dark); margin-top: 1px; }
+.fcard .fbadge { font-size: 10px; font-weight: 900; letter-spacing: 1px; padding: 4px 10px; border-radius: 50px; position: relative; z-index: 1; }
+.fbadge.new { background: var(--rust); color: #fff; }
+.fbadge.v2  { background: var(--green); color: #fff; }
+ 
+.s4 { background: var(--rust); overflow: hidden; }
+.s4 .confetti-bg { position: absolute; inset: 0; background-image: radial-gradient(circle,rgba(255,255,255,.12) 3px,transparent 3px), radial-gradient(circle,rgba(255,217,61,.25) 2px,transparent 2px); background-size: 40px 40px, 25px 25px; background-position: 0 0, 12px 12px; }
+.s4 .zigzag { position: absolute; top: 0; left: 0; right: 0; height: 30px; background: var(--cream); clip-path: polygon(0 0,5% 100%,10% 0,15% 100%,20% 0,25% 100%,30% 0,35% 100%,40% 0,45% 100%,50% 0,55% 100%,60% 0,65% 100%,70% 0,75% 100%,80% 0,85% 100%,90% 0,95% 100%,100% 0,100% 0,0 0); }
+.s4 .zigzag-bot { position: absolute; bottom: 0; left: 0; right: 0; height: 30px; background: var(--cream); clip-path: polygon(0 100%,5% 0,10% 100%,15% 0,20% 100%,25% 0,30% 100%,35% 0,40% 100%,45% 0,50% 100%,55% 0,60% 100%,65% 0,70% 100%,75% 0,80% 100%,85% 0,90% 100%,95% 0,100% 100%,100% 100%,0 100%); }
+.update-badge { background: var(--yellow); color: var(--dark); font-size: 11px; font-weight: 900; letter-spacing: 3px; padding: 7px 20px; border-radius: 50px; position: relative; z-index: 2; box-shadow: 0 4px 0 rgba(0,0,0,.15); opacity: 0; transform: scale(0); }
+.s4.active .update-badge { animation: popBounce 0.3s cubic-bezier(0.175,0.885,0.32,1.275) 0.1s forwards; }
+.update-headline { font-family: 'Fredoka One', cursive; font-size: 62px; line-height: 1; color: #fff; text-align: center; text-shadow: 0 5px 0 rgba(0,0,0,.2); position: relative; z-index: 2; margin-top: 16px; opacity: 0; transform: scale(0.7); }
+.s4.active .update-headline { animation: popBounce 0.35s cubic-bezier(0.175,0.885,0.32,1.275) 0.28s forwards; }
+.update-items { display: flex; flex-direction: column; gap: 10px; margin-top: 22px; position: relative; z-index: 2; width: 85%; }
+.uitem { display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,.22); border-radius: 14px; padding: 11px 16px; opacity: 0; transform: translateY(20px); }
+.uitem .uicon { font-size: 22px; }
+.uitem .utxt { font-size: 14px; font-weight: 800; color: #fff; }
+.s4.active .uitem:nth-child(1) { animation: adSlideUp 0.25s ease 0.6s forwards; }
+.s4.active .uitem:nth-child(2) { animation: adSlideUp 0.25s ease 0.75s forwards; }
+.s4.active .uitem:nth-child(3) { animation: adSlideUp 0.25s ease 0.9s forwards; }
+ 
+.s5 { background: var(--cream); overflow: hidden; }
+.s5 .top-wave { position: absolute; top: 0; left: 0; right: 0; height: 200px; background: var(--yellow); clip-path: ellipse(55% 60% at 50% 0%); }
+.stars-row { display: flex; gap: 6px; margin-bottom: 16px; position: relative; z-index: 2; opacity: 0; }
+.s5.active .stars-row { animation: adFadeIn 0.3s ease 0.1s forwards; }
+.stars-row span { font-size: 28px; filter: drop-shadow(0 2px 0 rgba(0,0,0,.1)); }
+.cta-logo-wrap { position: relative; z-index: 2; opacity: 0; transform: scale(0) rotate(-360deg); margin-bottom: 14px; }
+.s5.active .cta-logo-wrap { animation: spinIn 0.5s cubic-bezier(0.175,0.885,0.32,1.275) 0.2s forwards; }
+.cta-logo-wrap img { width: 88px; height: 88px; border-radius: 50%; object-fit: cover; border: 4px solid #fff; box-shadow: 0 6px 0 var(--rust), 0 12px 24px rgba(232,82,42,.3); }
+.cta-main-title { font-family: 'Fredoka One', cursive; font-size: 72px; line-height: 1; color: var(--dark); text-align: center; position: relative; z-index: 2; opacity: 0; transform: translateY(25px); letter-spacing: -1px; }
+.cta-main-title span { color: var(--rust); }
+.s5.active .cta-main-title { animation: adSlideUp 0.3s ease 0.45s forwards; }
+.cta-subtitle { font-family: 'Nunito', sans-serif; font-size: 20px; font-weight: 900; color: rgba(45,42,38,.55); text-align: center; position: relative; z-index: 2; opacity: 0; transform: translateY(10px); margin-top: 4px; letter-spacing: 0.5px; }
+.s5.active .cta-subtitle { animation: adSlideUp 0.3s ease 0.65s forwards; }
+.tag-row { display: flex; gap: 8px; margin-top: 14px; position: relative; z-index: 2; opacity: 0; }
+.s5.active .tag-row { animation: adFadeIn 0.3s ease 0.75s forwards; }
+.tag { font-size: 11px; font-weight: 900; letter-spacing: 1px; padding: 6px 14px; border-radius: 50px; box-shadow: 0 3px 0 rgba(0,0,0,.12); }
+.tag.t1 { background: var(--blue); color: #fff; }
+.tag.t2 { background: var(--green); color: #fff; }
+.tag.t3 { background: var(--pink); color: #fff; }
+.play-btn { margin-top: 22px; background: var(--rust); color: #fff; font-family: 'Fredoka One', cursive; font-size: 22px; letter-spacing: 1px; padding: 18px 48px; border-radius: 18px; border: none; cursor: pointer; box-shadow: 0 7px 0 #b33d1c, 0 12px 24px rgba(232,82,42,.3); position: relative; z-index: 2; opacity: 0; transform: translateY(20px) scale(.9); transition: transform 0.1s, box-shadow 0.1s; overflow: hidden; }
+.play-btn::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg,transparent,rgba(255,255,255,.25),transparent); animation: adShimmer 2s linear 1.2s infinite; }
+.s5.active .play-btn { animation: adSlideUp 0.35s cubic-bezier(0.175,0.885,0.32,1.275) 1s forwards, btnPulse 1.8s ease 1.5s infinite; }
+.play-btn:hover { transform: translateY(-2px) scale(1.03) !important; box-shadow: 0 10px 0 #b33d1c, 0 16px 30px rgba(232,82,42,.35) !important; }
+.play-btn:active { transform: translateY(5px) scale(.98) !important; box-shadow: 0 2px 0 #b33d1c !important; }
+.cta-tagline { font-size: 11px; font-weight: 700; color: rgba(45,42,38,.35); text-align: center; margin-top: 14px; letter-spacing: 1px; position: relative; z-index: 2; opacity: 0; }
+.s5.active .cta-tagline { animation: adFadeIn 0.3s ease 1.3s forwards; }
+ 
+.scene-dots { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; z-index: 200; }
+.sdot { width: 6px; height: 6px; border-radius: 50%; background: rgba(45,42,38,.15); transition: all 0.3s; }
+.sdot.on { background: var(--rust); width: 20px; border-radius: 3px; }
+ 
+.prog-bar { position: absolute; bottom: 0; left: 0; right: 0; height: 5px; background: rgba(45,42,38,.06); z-index: 300; border-radius: 0 0 32px 32px; overflow: hidden; }
+.prog-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--rust), var(--yellow)); border-radius: 0 0 32px 32px; box-shadow: 0 0 8px rgba(232,82,42,.5); }
+ 
+.replay-btn { position: absolute; bottom: 14px; right: 14px; background: var(--rust); color: #fff; font-family: 'Fredoka One', cursive; font-size: 13px; letter-spacing: 1px; padding: 8px 18px; border-radius: 50px; border: none; cursor: pointer; box-shadow: 0 3px 0 #b33d1c; opacity: 0; transition: opacity 0.3s; z-index: 500; }
+.replay-btn.show { opacity: 1; }
+ 
+.start-screen { position: absolute; inset: 0; z-index: 400; background: var(--cream); display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 32px; overflow: hidden; transition: opacity 0.4s ease, transform 0.4s ease; }
+.start-screen.hide { opacity: 0; transform: scale(1.05); pointer-events: none; }
+.start-screen .top-blob { position: absolute; top: 0; left: 0; right: 0; height: 260px; background: var(--yellow); clip-path: ellipse(60% 65% at 50% 0%); }
+.start-screen .bot-blob { position: absolute; bottom: 0; left: 0; right: 0; height: 120px; background: rgba(232,82,42,.08); clip-path: ellipse(70% 80% at 50% 100%); }
+.start-logo { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 4px solid #fff; box-shadow: 0 6px 0 var(--rust), 0 14px 28px rgba(232,82,42,.25); position: relative; z-index: 2; animation: adFloat 3s ease-in-out infinite; }
+.start-ttc { font-family: 'Fredoka One', cursive; font-size: 52px; line-height: 1; color: var(--rust); text-align: center; position: relative; z-index: 2; margin-top: 18px; text-shadow: 0 4px 0 #b33d1c; }
+.start-ttc span { color: var(--dark); }
+.start-tagline { font-size: 14px; font-weight: 800; color: rgba(45,42,38,.5); letter-spacing: 1px; position: relative; z-index: 2; margin-top: 6px; text-align: center; }
+.start-badge { background: var(--green); color: #fff; font-size: 11px; font-weight: 900; letter-spacing: 2px; padding: 6px 16px; border-radius: 50px; position: relative; z-index: 2; margin-top: 14px; box-shadow: 0 4px 0 #04a87e; }
+.start-btn { margin-top: 36px; background: var(--rust); color: #fff; font-family: 'Fredoka One', cursive; font-size: 24px; letter-spacing: 1px; padding: 18px 56px; border-radius: 18px; border: none; cursor: pointer; box-shadow: 0 7px 0 #b33d1c, 0 14px 28px rgba(232,82,42,.3); position: relative; z-index: 2; overflow: hidden; animation: btnPulse 1.8s ease infinite; transition: transform 0.1s, box-shadow 0.1s; }
+.start-btn::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg,transparent,rgba(255,255,255,.25),transparent); animation: adShimmer 2s linear infinite; }
+.start-btn:hover  { transform: translateY(-2px); box-shadow: 0 10px 0 #b33d1c, 0 18px 32px rgba(232,82,42,.35); }
+.start-btn:active { transform: translateY(5px); box-shadow: 0 2px 0 #b33d1c; }
+.start-note { font-size: 11px; font-weight: 700; color: rgba(45,42,38,.3); letter-spacing: 1px; position: relative; z-index: 2; margin-top: 16px; }
+ 
+@keyframes bounceIn  { 0%{opacity:0;transform:scale(0) rotate(-20deg)} 60%{transform:scale(1.2) rotate(5deg)} 100%{opacity:1;transform:scale(1) rotate(0deg)} }
+@keyframes adSlideUp { from{opacity:0;transform:translateY(25px)} to{opacity:1;transform:translateY(0)} }
+@keyframes adFadeIn  { from{opacity:0} to{opacity:1} }
+@keyframes popBounce { 0%{opacity:0;transform:scale(0)} 65%{transform:scale(1.12)} 100%{opacity:1;transform:scale(1)} }
+@keyframes blastIn   { 0%{opacity:0;transform:scale(0.4) rotate(-6deg)} 65%{transform:scale(1.08) rotate(1deg)} 100%{opacity:1;transform:scale(1) rotate(0deg)} }
+@keyframes spinIn    { 0%{opacity:0;transform:scale(0) rotate(-360deg)} 100%{opacity:1;transform:scale(1) rotate(0deg)} }
+@keyframes burstExpand { 0%{opacity:.4;transform:scale(0) rotate(0)} 100%{opacity:0;transform:scale(3) rotate(30deg)} }
+@keyframes cardBounce  { 0%{opacity:0;transform:translateX(-50px) scale(.95)} 65%{transform:translateX(5px) scale(1.02)} 100%{opacity:1;transform:translateX(0) scale(1)} }
+@keyframes adShimmer   { from{left:-100%} to{left:200%} }
+@keyframes btnPulse    { 0%,100%{box-shadow:0 7px 0 #b33d1c,0 12px 24px rgba(232,82,42,.3)} 50%{box-shadow:0 7px 0 #b33d1c,0 12px 40px rgba(232,82,42,.55)} }
+@keyframes adFloat     { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+@keyframes screenShake { 0%,100%{transform:translate(0,0)} 20%{transform:translate(-5px,3px)} 40%{transform:translate(5px,-3px)} 60%{transform:translate(-4px,4px)} 80%{transform:translate(4px,-2px)} }
+ 
+/* ═══════════════════════════════════
+   QUIZ STYLES
+═══════════════════════════════════ */
+.app { width: 430px; max-width: 95vw; display: none; }
+.screen { display: none; }
+.screen.active { display: block; animation: popIn 0.42s cubic-bezier(.34,1.56,.64,1) forwards; }
+@keyframes popIn { from { opacity: 0; transform: scale(0.92) translateY(18px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+.card { background: var(--white); border: 3px solid var(--dark); border-radius: 24px; padding: 32px 28px; box-shadow: 8px 8px 0px var(--dark); text-align: center; position: relative; overflow: hidden; }
+.card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 6px; background: linear-gradient(90deg, var(--blue), var(--pink), var(--orange), var(--lime)); }
+.logo { width: 72px; height: 72px; object-fit: contain; border-radius: 50%; border: 3px solid var(--dark); box-shadow: 3px 3px 0 var(--dark); margin-bottom: 14px; display: block; margin-left: auto; margin-right: auto; }
+.chip { display: inline-block; background: var(--lime); color: var(--dark); font-size: 11px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; padding: 5px 14px; border-radius: 50px; border: 2px solid var(--dark); box-shadow: 2px 2px 0 var(--dark); margin-bottom: 14px; }
+h2 { font-family: 'Righteous', cursive; font-size: 28px; color: var(--dark); line-height: 1.2; margin-bottom: 8px; }
+p.sub { font-size: 14px; color: var(--grey); font-weight: 500; margin-bottom: 20px; }
+.input-field { width: 100%; padding: 13px 16px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 700; color: var(--dark); background: var(--off); border: 2.5px solid var(--dark); border-radius: 14px; outline: none; box-shadow: 3px 3px 0 var(--dark); transition: box-shadow 0.15s, transform 0.15s, border-color 0.15s; margin-bottom: 18px; }
+.input-field:focus { box-shadow: 3px 3px 0 var(--blue); border-color: var(--blue); transform: translate(-1px,-1px); }
+.btn { display: inline-block; width: 100%; padding: 14px 22px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 800; border: 2.5px solid var(--dark); border-radius: 14px; cursor: pointer; text-align: center; text-decoration: none; letter-spacing: 0.3px; transition: transform 0.12s, box-shadow 0.12s; box-shadow: 4px 4px 0 var(--dark); margin-top: 10px; }
+.btn:hover  { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--dark); }
+.btn:active { transform: translate(2px,2px);   box-shadow: 2px 2px 0 var(--dark); }
+.btn-blue   { background: var(--blue);  color: white; }
+.btn-lime   { background: var(--lime);  color: var(--dark); }
+.btn-pink   { background: var(--pink);  color: white; position: relative; overflow: hidden; }
+.btn-green  { background: var(--green); color: white; }
+.btn-ghost  { background: transparent; color: var(--grey); border-color: var(--light); box-shadow: 4px 4px 0 var(--light); }
+.btn-ghost:hover { border-color: var(--dark); color: var(--dark); box-shadow: 4px 4px 0 var(--dark); }
+.info-strip { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 16px 0 22px; }
+.info-pill { background: var(--off); border: 2px solid var(--dark); border-radius: 50px; padding: 5px 14px; font-size: 12px; font-weight: 700; color: var(--dark); box-shadow: 2px 2px 0 var(--dark); }
+.progress-wrap { margin-bottom: 22px; }
+.progress-meta { display: flex; justify-content: space-between; font-size: 12px; font-weight: 800; color: var(--dark); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.3px; }
+.progress-track { height: 10px; background: var(--light); border-radius: 50px; border: 2px solid var(--dark); overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--blue), var(--pink)); border-radius: 50px; width: 0%; transition: width 0.5s cubic-bezier(.34,1.2,.64,1); }
+.question-text { font-family: 'Righteous', cursive; font-size: 17px; color: var(--dark); line-height: 1.5; margin-bottom: 20px; min-height: 60px; text-align: left; }
+.options-grid { display: flex; flex-direction: column; gap: 10px; text-align: left; }
+.option { display: flex; align-items: center; gap: 12px; padding: 13px 16px; background: var(--white); border: 2.5px solid var(--dark); border-radius: 14px; cursor: pointer; font-size: 13px; font-weight: 700; color: var(--dark); box-shadow: 3px 3px 0 var(--dark); line-height: 1.4; transition: transform 0.12s, box-shadow 0.12s, background 0.15s, border-color 0.15s; animation: slideIn 0.3s cubic-bezier(.34,1.3,.64,1) backwards; }
+@keyframes slideIn { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: translateX(0); } }
+.option:hover { transform: translate(-2px,-2px); box-shadow: 5px 5px 0 var(--blue); border-color: var(--blue); background: #F0F3FF; }
+.option-letter { width: 30px; height: 30px; border-radius: 9px; background: var(--off); border: 2px solid var(--dark); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; flex-shrink: 0; font-family: 'Righteous', cursive; transition: background 0.15s, border-color 0.15s; }
+.option.correct { background: #EAFFDA; border-color: #3DB838; box-shadow: 3px 3px 0 #3DB838; transform: none; }
+.option.correct .option-letter { background: #3DB838; border-color: #3DB838; color: white; }
+.option.wrong { background: #FFEAEA; border-color: var(--pink); box-shadow: 3px 3px 0 var(--pink); transform: none; }
+.option.wrong .option-letter { background: var(--pink); border-color: var(--pink); color: white; }
+.expl-box { display: none; margin-top: 16px; background: #FFFBE6; border: 2.5px solid var(--orange); border-radius: 14px; padding: 13px 16px; font-size: 13px; font-weight: 600; color: #6B4500; text-align: left; line-height: 1.6; box-shadow: 3px 3px 0 var(--orange); }
+.expl-box.show { display: block; animation: popIn 0.3s cubic-bezier(.34,1.3,.64,1); }
+.expl-tag { font-family: 'Righteous', cursive; color: var(--orange); font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; display: block; margin-bottom: 4px; }
+.score-block { margin: 10px 0 18px; }
+.score-number { font-family: 'Righteous', cursive; font-size: 76px; color: var(--blue); line-height: 1; text-shadow: 4px 4px 0 var(--dark); }
+.score-denom { font-size: 20px; font-weight: 800; color: var(--grey); }
+.score-pct { display: inline-block; margin-top: 6px; font-size: 13px; font-weight: 800; padding: 4px 16px; border-radius: 50px; border: 2px solid var(--dark); box-shadow: 2px 2px 0 var(--dark); }
+.fb-box { background: var(--off); border: 2.5px solid var(--dark); border-radius: 16px; padding: 16px; margin: 14px 0; box-shadow: 4px 4px 0 var(--dark); text-align: left; }
+.fb-box .fb-emoji { font-size: 28px; margin-bottom: 6px; display: block; }
+.fb-box strong { font-family: 'Righteous', cursive; font-size: 18px; color: var(--dark); display: block; margin-bottom: 4px; }
+.fb-box p { font-size: 13px; color: var(--grey); margin: 0; font-weight: 600; line-height: 1.5; }
+.divider { display: flex; align-items: center; gap: 12px; margin: 22px 0; color: var(--grey); font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; }
+.divider::before, .divider::after { content: ''; flex: 1; height: 2px; background: var(--light); border-radius: 2px; }
+.rev-head { margin-bottom: 16px; }
+.rev-head .r-emoji { font-size: 28px; margin-bottom: 8px; }
+.rev-head h3 { font-family: 'Righteous', cursive; font-size: 22px; color: var(--dark); margin-bottom: 4px; }
+.rev-head p { font-size: 12px; font-weight: 600; color: var(--grey); }
+.sburst { position: absolute; font-size: 14px; pointer-events: none; animation: burstAnim 750ms forwards; }
+@keyframes burstAnim { 0%{opacity:1;transform:translate(0,0) scale(1.3) rotate(0deg)} 100%{opacity:0;transform:translate(var(--bx),var(--by)) scale(0) rotate(180deg)} }
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+ 
+<div id="adOverlay">
+  <div class="stage" id="stage">
+    <div class="start-screen" id="startScreen">
+      <div class="top-blob"></div><div class="bot-blob"></div>
+      <img class="start-logo" src="https://i.postimg.cc/x9mDND2Q/Ttc-logo.png" alt="TTC">
+      <div class="start-ttc">TTC <span>QUIZ</span></div>
+      <div class="start-tagline">Tushar Tuition Classes · Wardha</div>
+      <div class="start-badge">✅ Version 2.0 — Updated</div>
+      <button class="start-btn" id="startBtn">🚀 Start Now!</button>
+      <div class="start-note">🔊 Turn on sound for best experience</div>
+    </div>
+    <div class="scene-dots" id="sceneDots" style="opacity:0;transition:opacity 0.4s;"><div class="sdot on" id="d0"></div><div class="sdot" id="d1"></div><div class="sdot" id="d2"></div><div class="sdot" id="d3"></div><div class="sdot" id="d4"></div></div>
+    <canvas id="particles"></canvas>
+    <div class="scene s0" id="s0"><div class="dots-bg"></div><div class="hey-emoji">🎉</div><div class="hey-text">HEY!</div><div class="hey-sub">Something awesome just dropped!</div><div class="pill-row"><div class="pill">✨ New</div><div class="pill">🆓 Free</div><div class="pill">⚡ Updated</div></div></div>
+    <div class="scene s1" id="s1"><div class="cd-ring"><div class="cd-ring-inner"><div class="cd-num" id="cdNum">3</div></div></div><div class="cd-label">GET READY!</div></div>
+    <div class="scene s2" id="s2"><div class="burst-bg"></div><div class="logo-ring"><img src="https://i.postimg.cc/x9mDND2Q/Ttc-logo.png" alt="TTC"></div><div class="big-ttc">TTC</div><div class="big-quiz">QUIZ</div><div class="v2-tag">✅ VERSION 2.0 — UPDATED</div></div>
+    <div class="scene s3" id="s3"><div class="feat-title">✨ What's Inside?</div><div class="feat-list"><div class="fcard c1"><div class="ficon">📖</div><div class="finfo"><div class="flabel">Subject</div><div class="fval">English Literature</div></div></div><div class="fcard c2"><div class="ficon">🎯</div><div class="finfo"><div class="flabel">Challenge</div><div class="fval">39 Questions</div></div><div class="fbadge new">NEW</div></div><div class="fcard c3"><div class="ficon">💡</div><div class="finfo"><div class="flabel">Mode</div><div class="fval">Instant Explanations</div></div><div class="fbadge v2">V2</div></div><div class="fcard c4"><div class="ficon">📤</div><div class="finfo"><div class="flabel">Share</div><div class="fval">WhatsApp Your Score!</div></div></div></div></div>
+    <div class="scene s4" id="s4"><div class="confetti-bg"></div><div class="zigzag"></div><div class="zigzag-bot"></div><div class="update-badge">🚀 BIG UPDATE</div><div class="update-headline">BIGGER<br>&amp; BETTER!</div><div class="update-items"><div class="uitem"><div class="uicon">⚡</div><div class="utxt">Faster &amp; smoother than ever</div></div><div class="uitem"><div class="uicon">🏆</div><div class="utxt">Scored + full explanations</div></div><div class="uitem"><div class="uicon">💬</div><div class="utxt">Share results on WhatsApp</div></div></div></div>
+    <div class="scene s5" id="s5"><div class="top-wave"></div><div class="stars-row"><span>⭐</span><span>⭐</span><span>⭐</span><span>⭐</span><span>⭐</span></div><div class="cta-logo-wrap"><img src="https://i.postimg.cc/x9mDND2Q/Ttc-logo.png" alt="TTC"></div><div class="cta-main-title">TTC <span>QUIZ</span></div><div class="cta-subtitle">is here! 🎉</div><div class="tag-row"><div class="tag t1">Free</div><div class="tag t2">Instant</div><div class="tag t3">Fun!</div></div><button class="play-btn" onclick="launchQuiz()">▶ Play Now!</button><div class="cta-tagline">Tushar Tuition Classes · Wardha</div></div>
+    <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
+    <button class="replay-btn" id="replayBtn" onclick="startAd()">↺ Replay</button>
+  </div>
+</div>
+ 
+<div class="app" id="quizApp">
+  <div id="nameScreen" class="screen active">
+    <div class="card" style="display:flex;flex-direction:column;align-items:center;">
+      <img src="https://i.postimg.cc/x9mDND2Q/Ttc-logo.png" class="logo" alt="TTC">
+      <div class="chip">✦ TTC Wardha</div>
+      <h2>Hey there!<br>What's your name?</h2>
+      <p class="sub">Enter your name to start the quiz 🎯</p>
+      <input id="username" class="input-field" type="text" placeholder="Your full name..." autocomplete="off">
+      <button class="btn btn-blue" onclick="startWelcome()">Continue →</button>
+    </div>
+  </div>
+  <div id="welcomeScreen" class="screen">
+    <div class="card">
+      <img src="https://i.postimg.cc/x9mDND2Q/Ttc-logo.png" class="logo" alt="TTC">
+      <div class="chip">✦ You're up!</div>
+      <h2 id="welcomeText"></h2>
+      <p class="sub">Ready to prove yourself? 💪</p>
+      <div class="info-strip">
+        <div class="info-pill">📖 How I Taught My Grandmother to Read</div><div class="info-pill">39 Questions</div>
+        <div class="info-pill">🏆 Scored</div><div class="info-pill">⏱ Self-paced</div>
+      </div>
+      <button class="btn btn-blue" onclick="startQuiz()">Start Quiz 🚀</button>
+    </div>
+  </div>
+  <div id="quizScreen" class="screen">
+    <div class="card">
+      <img src="https://i.postimg.cc/x9mDND2Q/Ttc-logo.png" class="logo" alt="TTC">
+      <div class="progress-wrap">
+        <div class="progress-meta"><span id="qCounter">Q 1 / 39</span><span id="qScore">Score: 0</span></div>
+        <div class="progress-track"><div class="progress-fill" id="progressBar"></div></div>
+      </div>
+      <p class="question-text" id="question"></p>
+      <div class="options-grid" id="options"></div>
+      <div class="expl-box" id="explBox"><span class="expl-tag">💡 Explanation</span><span id="explText"></span></div><br>
+      <button id="nextBtn" class="btn btn-blue hidden" onclick="nextQuestion()">Next Question →</button>
+    </div>
+  </div>
+  <div id="resultScreen" class="screen">
+    <div class="card">
+      <img src="https://i.postimg.cc/x9mDND2Q/Ttc-logo.png" class="logo" alt="TTC">
+      <div class="chip" id="resultChip">✦ Quiz Done!</div>
+      <div class="score-block">
+        <div><span class="score-number" id="scoreNum">0</span><span class="score-denom" id="scoreDenom">/39</span></div>
+        <div class="score-pct" id="scorePct">0%</div>
+      </div>
+      <div class="fb-box"><span class="fb-emoji" id="fbEmoji"></span><strong id="fbTitle"></strong><p id="fbMsg"></p></div>
+      <button class="btn btn-green" onclick="shareWhatsApp()">📤 Share on WhatsApp</button>
+      <button class="btn btn-blue" onclick="downloadStudentPdf()">Download PDF Report</button>
+      <button id="ratingBtn" class="btn btn-pink">⭐ Rate Us on Google</button>
+      <button class="btn btn-ghost" onclick="restartQuiz()">↺ Try Again</button>
+      <div class="divider">What others say</div>
+      <div class="rev-head"><div class="r-emoji">🌟</div><h3>Loved by TTC Families</h3><p>Real reviews from students &amp; parents across Wardha</p></div>
+      <a href="https://g.page/r/CdUkswJ0ZulAEBE/review" target="_blank" class="btn btn-lime" style="display:block;text-align:center;">✍️ Give Us a Review</a>
+      <div style="margin-top:20px;">
+        <div class="famewall-embed" data-src="https---maps-app-goo-gl-CCkEWRVgjbvHpQmLA" data-format="grid" style="width:100%;min-height:300px;"></div>
+        <script type="text/javascript" src="https://embed.famewall.io/frame.js" defer></script>
+      </div>
+    </div>
+  </div>
+</div>
+ 
+<script>
+/* ════════════════════════
+   AD ENGINE
+════════════════════════ */
+let audioCtx=null;function ac(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();return audioCtx;}
+function tone(f,t,d,v=0.25,dl=0){const c=ac(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.type=t;o.frequency.setValueAtTime(f,c.currentTime+dl);g.gain.setValueAtTime(v,c.currentTime+dl);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+dl+d);o.start(c.currentTime+dl);o.stop(c.currentTime+dl+d);}
+function noise(d,v=0.1,dl=0){const c=ac(),b=c.createBuffer(1,c.sampleRate*d,c.sampleRate),dt=b.getChannelData(0);for(let i=0;i<dt.length;i++)dt[i]=Math.random()*2-1;const s=c.createBufferSource(),g=c.createGain();s.buffer=b;s.connect(g);g.connect(c.destination);g.gain.setValueAtTime(v,c.currentTime+dl);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+dl+d);s.start(c.currentTime+dl);}
+function sndHey(){tone(880,'sine',0.15,0.3);tone(1100,'sine',0.12,0.2,0.15);noise(0.08,0.06);}function sndBeep(n){tone([0,1200,900,660][n]||880,'square',0.1,0.3);noise(0.04,0.04);}function sndBlast(){tone(100,'sawtooth',0.35,0.35);tone(200,'sawtooth',0.25,0.25,0.03);noise(0.2,0.18);}function sndWhoosh(){const c=ac(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.type='sawtooth';o.frequency.setValueAtTime(1000,c.currentTime);o.frequency.exponentialRampToValueAtTime(100,c.currentTime+0.3);g.gain.setValueAtTime(0.2,c.currentTime);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.3);o.start();o.stop(c.currentTime+0.3);}function sndTick(){tone(1400,'square',0.04,0.2);}function sndVictory(){[523,659,784,1047,1319].forEach((f,i)=>tone(f,'sine',0.2,0.22,i*0.09));noise(0.12,0.04,0.3);}function sndPop(){tone(600,'sine',0.08,0.25);tone(900,'sine',0.06,0.2,0.06);}
+const cvs=document.getElementById('particles'),cx=cvs.getContext('2d');cvs.width=360;cvs.height=640;let pts=[];const FC=['#E8522A','#FFD93D','#4CC9F0','#06D6A0','#FF6B9D','#A78BFA','#fff'];function burst(x,y,n=70,cl=FC){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=3+Math.random()*9;pts.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-4,life:1,decay:0.018+Math.random()*0.025,size:4+Math.random()*7,color:cl[Math.floor(Math.random()*cl.length)],shape:Math.random()>.4?'rect':'circle',rot:Math.random()*Math.PI*2,rotV:(Math.random()-.5)*0.3});}}function confettiRain(n=80,dl=0){setTimeout(()=>{for(let i=0;i<n;i++){pts.push({x:Math.random()*370,y:-10-Math.random()*60,vx:(Math.random()-.5)*2.5,vy:3+Math.random()*5,life:1,decay:0.006+Math.random()*0.008,size:6+Math.random()*8,color:FC[Math.floor(Math.random()*FC.length)],shape:Math.random()>.4?'rect':'circle',rot:Math.random()*Math.PI*2,rotV:(Math.random()-.5)*0.15,wobble:Math.random()*Math.PI*2,wobbleSpeed:0.05+Math.random()*0.05});}},dl);}function sparks(x,y){for(let i=0;i<15;i++){const a=Math.random()*Math.PI*2,sp=2+Math.random()*5;pts.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:1,decay:0.06,size:2+Math.random()*3,color:'#FFD93D',shape:'circle',rot:0,rotV:0});}}function tickPts(){cx.clearRect(0,0,360,640);pts=pts.filter(p=>p.life>0);pts.forEach(p=>{if(p.wobble!==undefined){p.wobble+=p.wobbleSpeed;p.vx+=Math.sin(p.wobble)*0.08;}p.x+=p.vx;p.y+=p.vy;p.vy+=0.2;p.vx*=0.97;p.life-=p.decay;p.rot+=p.rotV;cx.save();cx.globalAlpha=Math.max(0,p.life);cx.fillStyle=p.color;if(p.shape==='rect'){cx.translate(p.x,p.y);cx.rotate(p.rot);cx.fillRect(-p.size/2,-p.size/2,p.size,p.size);}else{cx.beginPath();cx.arc(p.x,p.y,p.size/2,0,Math.PI*2);cx.fill();}cx.restore();});requestAnimationFrame(tickPts);}tickPts();
+const TS=6,DR=[1500,1300,1800,2600,2200,4000],TD=DR.reduce((a,b)=>a+b,0);let cr=0,mT=null,cI=null,pR=null,pT=null,go=false;const sE=document.getElementById('stage'),pF=document.getElementById('progFill'),rB=document.getElementById('replayBtn');
+function shake(){sE.style.animation='screenShake 0.25s ease';setTimeout(()=>sE.style.animation='',280);}function setDot(n){for(let i=0;i<TS-1;i++){const d=document.getElementById('d'+i);if(d)d.classList.toggle('on',i===n);}}
+function goScene(n){document.querySelectorAll('.scene').forEach(s=>s.classList.remove('active'));const s=document.getElementById('s'+n);if(s){void s.offsetWidth;s.classList.add('active');}setDot(n);if(n===0)sndHey();if(n===1){sndBeep(3);runCountdown();}if(n===2){sndBlast();shake();burst(180,320,90);setTimeout(sndPop,350);}if(n===3){sndWhoosh();[150,300,450,600].forEach(d=>setTimeout(sndTick,d));}if(n===4){shake();sndPop();setTimeout(sndPop,120);burst(180,220,60,['#fff','#FFD93D','rgba(255,255,255,.6)']);}if(n===5){sndVictory();confettiRain(55);burst(60,200,50);burst(300,150,50);}}
+let cN=3;function runCountdown(){clearInterval(cI);cN=3;const el=document.getElementById('cdNum');el.textContent=3;sparks(180,300);cI=setInterval(()=>{cN--;if(cN<=0){clearInterval(cI);el.textContent=1;sndBeep(1);return;}el.textContent=cN;sndBeep(cN);sparks(180,300);el.style.animation='';void el.offsetWidth;},400);}
+function schedNext(){if(!go)return;mT=setTimeout(()=>{cr++;if(cr<TS){goScene(cr);schedNext();}else{go=false;rB.classList.add('show');}},DR[cr]);}
+function animProg(){pT=performance.now();function step(n){const p=Math.min(((n-pT)/TD)*100,100);pF.style.width=p+'%';if(p<100&&go)pR=requestAnimationFrame(step);}pR=requestAnimationFrame(step);}
+function startAd(){cr=0;go=true;clearTimeout(mT);clearInterval(cI);cancelAnimationFrame(pR);pF.style.width='0%';rB.classList.remove('show');goScene(0);schedNext();animProg();}
+function launchQuiz(){document.getElementById('adOverlay').style.opacity='0';setTimeout(()=>{document.getElementById('adOverlay').style.display='none';document.getElementById('quizApp').style.display='block';const sv=localStorage.getItem('ttc_name');if(sv)document.getElementById('username').value=sv;},600);}
+document.getElementById('startBtn').addEventListener('click',()=>{document.getElementById('startScreen').classList.add('hide');setTimeout(()=>{document.getElementById('startScreen').style.display='none';document.getElementById('sceneDots').style.opacity='1';},400);startAd();});
+ 
+/* ════════════════════════
+   QUIZ DATA
+════════════════════════ */
+const subjectName="English", chapterName="How I Taught My Grandmother to Read";
+const quizData=[
+  {question:"What is the full form of TTC?",options:["The Teaching Council","Tushar Tuition Classes","Tushar Timing Classes","Technical Training College"],correct:"Tushar Tuition Classes",explanation:"TTC bole to Tushar Tuition Classes 😏"},
+  {question:"Where did the narrator used to stay with her grandparents when she was a twelve-year-old girl?",options:["In a bustling city in Maharashtra","In a coastal town in Kerala","In a village in north Karnataka","In a hill station in Tamil Nadu"],correct:"In a village in north Karnataka",explanation:"The narrator mentions staying in a village in north Karnataka with her grandparents when she was twelve."},
+  {question:"Why did the morning paper and weekly magazines reach the village late?",options:["The transport system was not very good.","The postman was often on leave.","The printing press was extremely far away.","The villagers did not subscribe to daily deliveries."],correct:"The transport system was not very good.",explanation:"Due to a poor transport system in those days, the morning paper arrived in the afternoon and weekly magazines were a day late."},
+  {question:"What was the defining characteristic of the popular Kannada writer Triveni's writing style?",options:["She used heavy, complex vocabulary.","She focused mostly on science fiction.","She wrote primarily historical epics.","Her style was easy to read and very convincing."],correct:"Her style was easy to read and very convincing.",explanation:"Triveni was praised for having an easy-to-read and very convincing writing style."},
+  {question:"What themes did Triveni usually deal with in her stories?",options:["Royal dynasties and wars","Complex psychological problems in the lives of ordinary people","Supernatural events and mysteries","Biographies of famous leaders"],correct:"Complex psychological problems in the lives of ordinary people",explanation:"Her stories were interesting because they dealt with the complex psychological problems of ordinary people."},
+  {question:"What was the name of the Kannada weekly magazine in which 'Kashi Yatre' appeared as a serial?",options:["Kannadaprabha","Sudha","Karmaveera","Taranga"],correct:"Karmaveera",explanation:"The novel 'Kashi Yatre' was appearing as a serial in the Kannada weekly magazine named Karmaveera."},
+  {question:"According to the beliefs mentioned in the story, what is considered the ultimate 'punya' for most Hindus?",options:["Donating all wealth to the poor","Fasting for a whole month","Feeding orphans on festival days","Going to Kashi and worshipping Lord Vishweshwara"],correct:"Going to Kashi and worshipping Lord Vishweshwara",explanation:"Most Hindus believe worshipping Lord Vishweshwara in Kashi is the ultimate punya."},
+  {question:"In the novel 'Kashi Yatre,' what does the old lady ultimately do with her savings?",options:["She gives away all her savings to a young orphan girl for her wedding.","She donates it to the temple in her village.","She uses it to travel to Kashi comfortably.","She saves it for her grandchildren's education."],correct:"She gives away all her savings to a young orphan girl for her wedding.",explanation:"In the end, the old lady gives her savings to an orphan girl who falls in love but has no money for her wedding."},
+  {question:"What was the name of the narrator's grandmother?",options:["Saraswati","Triveni","Krishtakka","Sudha"],correct:"Krishtakka",explanation:"The narrator mentions her grandmother's name is Krishtakka."},
+  {question:"Why couldn't the narrator's grandmother read the story herself?",options:["She had lost her eyesight entirely.","She never went to school so she could not read.","She only knew how to read English.","She did not have the time to read."],correct:"She never went to school so she could not read.",explanation:"Krishtakka never went to school, which is why she could not read the magazine."},
+  {question:"On which day of the week would the magazine arrive for the narrator to read to her grandmother?",options:["Monday","Tuesday","Thursday","Wednesday"],correct:"Wednesday",explanation:"The narrator notes that every Wednesday the magazine would come and she would read the next episode."},
+  {question:"What incredible ability did the grandmother possess after listening to the story?",options:["She could repeat the entire text by heart.","She could predict the ending of the novel.","She could write the story down in her own words.","She could translate the story into another language."],correct:"She could repeat the entire text by heart.",explanation:"The grandmother listened with such great concentration that she could later repeat the entire text by heart."},
+  {question:"Why was the grandmother more interested in the story than anybody else?",options:["She knew the author personally.","She wanted to travel to Kashi soon.","She identified herself with the novel's protagonist.","She loved reading weekly magazines."],correct:"She identified herself with the novel's protagonist.",explanation:"Because she too had never been to Kashi, she deeply identified herself with the protagonist of the novel."},
+  {question:"Where would the grandmother go to discuss the latest episode with her friends?",options:["The village market","The temple courtyard","The riverbank","The local school"],correct:"The temple courtyard",explanation:"After hearing the story, she would join her friends at the temple courtyard to discuss it."},
+  {question:"What occasion caused the narrator to leave the village and go to a neighbouring one?",options:["A temple festival","A school competition","A family property dispute","A wedding with her cousins"],correct:"A wedding with her cousins",explanation:"The narrator went to a neighbouring village to attend a wedding with her cousins."},
+  {question:"How long did the narrator end up staying at the neighbouring village?",options:["A couple of days","A month","A week","Two weeks"],correct:"A week",explanation:"She initially went for a couple of days but ended up staying there for a week."},
+  {question:"What surprising sight met the narrator when she returned to her village?",options:["Her grandmother was in tears.","Her grandmother had bought a ticket to Kashi.","Her grandmother had learned how to read.","The village transport system was fixed."],correct:"Her grandmother was in tears.",explanation:"Upon her return, the narrator was shocked to see her grandmother, who rarely showed distress, in tears."},
+  {question:"What does the word 'Avva' mean in the Kannada spoken in north Karnataka?",options:["Grandmother","Mother","Sister","Aunt"],correct:"Mother",explanation:"The narrator explains that 'Avva' means mother in the regional Kannada dialect."},
+  {question:"Where did the grandmother and narrator sit when the grandmother shared her life story?",options:["In the kitchen near the stove","Under a large banyan tree","In the temple courtyard","In the open terrace of their house"],correct:"In the open terrace of their house",explanation:"They were sleeping in the open terrace on a summer night when the conversation took place."},
+  {question:"What was the primary reason the grandmother's education was neglected in her childhood?",options:["In those days people never considered education essential for girls.","Her father was busy and could not afford school fees.","She was constantly sick as a child.","The nearest school was in a different village."],correct:"In those days people never considered education essential for girls.",explanation:"The grandmother explains that after losing her mother, and because education for girls wasn't considered essential then, she never went to school."},
+  {question:"Despite finding happiness in cooking and feeding her family, what did the grandmother feel at times?",options:["She wished she had travelled the world.","She wanted to start her own business.","She used to regret not going to school.","She felt angry at her grandchildren."],correct:"She used to regret not going to school.",explanation:"She admits that at times she used to regret not going to school, which is why she ensured her children studied well."},
+  {question:"What did the grandmother do with the magazine while the narrator was away?",options:["She threw it away out of frustration.","She rubbed her hands over the pages wishing they could understand what was written.","She tore out the pictures to keep them.","She gave it to a neighbour to keep safe."],correct:"She rubbed her hands over the pages wishing they could understand what was written.",explanation:"Feeling helpless, she opened the magazine and rubbed her hands over the pages, wishing they could understand the text."},
+  {question:"Why didn't the grandmother ask someone else in the village to read the story to her?",options:["She was too embarrassed and felt very dependent and helpless.","No one else in the village knew how to read Kannada.","She didn't want anyone to know she liked the story.","Everyone else was busy attending the wedding."],correct:"She was too embarrassed and felt very dependent and helpless.",explanation:"She considered asking someone but felt too embarrassed to do so, leading to feelings of dependence and helplessness."},
+  {question:"What powerful realization did the grandmother have about wealth?",options:["Money is only useful for going to Kashi and to donate.","Wealth can buy books, but not the ability to read.","She should have saved more money for her old age.","We are well-off, but what use is money when I cannot be independent?"],correct:"We are well-off, but what use is money when I cannot be independent?",explanation:"The grandmother questions the value of their wealth if she still lacks personal independence."},
+  {question:"What deadline did the grandmother set for herself to learn the Kannada alphabet?",options:["Her sixty-third birthday","Saraswati Puja day during Dassara","The day the final episode of Kashi Yatre was published","The end of the summer holidays"],correct:"Saraswati Puja day during Dassara",explanation:"She decided to work hard and set Saraswati Puja day during the Dassara festival as her deadline."},
+  {question:"How did the twelve-year-old narrator initially react to her grandmother's decision?",options:["She immediately started gathering books for her.","She cried tears of joy for her grandmother.","She childishly made fun of the old lady and laughed.","She told her parents about the grand plan."],correct:"She childishly made fun of the old lady and laughed.",explanation:"The narrator admits she childishly laughed at her grandmother and pointed out her old age."},
+  {question:"Which of the following 'obstacles' did the narrator NOT point out when mocking her grandmother's plan?",options:["Poor memory","Grey hair","Wrinkled hands","Wearing spectacles"],correct:"Poor memory",explanation:"The narrator pointed out her grey hair, wrinkled hands, spectacles, and kitchen work, but did not mention poor memory."},
+  {question:"What profound belief did the grandmother hold regarding a 'good cause'?",options:["For a good cause, one must always seek the help of elders.","For a good cause if you are determined, you can overcome any obstacle.","For a good cause, money is the most important factor.","For a good cause, you must sacrifice your happiness."],correct:"For a good cause if you are determined, you can overcome any obstacle.",explanation:"The grandmother stated that determination for a good cause can overcome any obstacle, and that learning has no age bar."},
+  {question:"Which of the following best describes the grandmother as a student?",options:["She was easily distracted by her kitchen duties.","She complained about the difficulty of the alphabet.","She only wanted to listen, not write.","She did an amazing amount of homework and would read, repeat, write, and recite."],correct:"She did an amazing amount of homework and would read, repeat, write, and recite.",explanation:"Avva was a wonderful student who worked incredibly hard, doing all her homework diligently."},
+  {question:"What profession did the narrator eventually take up later in life?",options:["A writer of Kannada literature","A social worker in a rural community","A teacher in Computer Science","A publisher for weekly magazines"],correct:"A teacher in Computer Science",explanation:"The narrator notes that little did she know then that she would one day become a Computer Science teacher."},
+  {question:"On the day of Dassara, what gift did the grandmother give the narrator?",options:["A frock material","A gold necklace","A sum of money","A copy of Kashi Yatre"],correct:"A frock material",explanation:"The grandmother called her to the puja place and gifted her frock material."},
+  {question:"What highly unusual action did the grandmother take that surprised the narrator?",options:["She gave away all her savings to a beggar.","She refused to speak to anyone in the family.","She declared she was leaving for Kashi immediately.","She bent down and touched the narrator's feet."],correct:"She bent down and touched the narrator's feet.",explanation:"The grandmother broke tradition by bending down and touching her young granddaughter's feet."},
+  {question:"How did the grandmother justify touching a young girl's feet?",options:["She said it was a new tradition she was starting.","She was touching the feet of a teacher who made her independent, not her granddaughter.","She believed children are forms of God.","She was asking for forgiveness for her past mistakes."],correct:"She was touching the feet of a teacher who made her independent, not her granddaughter.",explanation:"She explained that she was showing respect to a teacher who had taught her well and made her independent, in accordance with scriptures."},
+  {question:"How did the narrator respond to the grandmother's gesture of respect?",options:["She scolded her grandmother for breaking tradition.","She ran away feeling deeply embarrassed.","She returned the namaskara by touching her grandmother's feet.","She simply accepted the gift and walked away."],correct:"She returned the namaskara by touching her grandmother's feet.",explanation:"The narrator returned the respect by touching her grandmother's feet and giving her a gift."},
+  {question:"What gift did the narrator give to her grandmother (her 'first student')?",options:["A copy of the novel Kashi Yatre by Triveni","A pair of new spectacles","A ticket to travel to Varanasi","A new Kannada dictionary"],correct:"A copy of the novel Kashi Yatre by Triveni",explanation:"The narrator secretly bought the published novel Kashi Yatre and gave it to her grandmother."},
+  {question:"In the context of the story, what does the word 'ardent' mean in the phrase 'ardent desire'?",options:["Foolish","Temporary","Keen","Impossible"],correct:"Keen",explanation:"'Ardent' means keen or intense."},
+  {question:"What is the meaning of the word 'savouring' as used when the children were enjoying their freedom at the wedding?",options:["Ignoring completely","Enjoying it to the fullest","Tasting different foods","Waiting impatiently"],correct:"Enjoying it to the fullest",explanation:"The meaning of 'savouring' is enjoying it to the fullest."},
+  {question:"When the narrator was 'taken aback' by her grandmother's action, what did she feel?",options:["Deeply saddened by an event","Angry at a lack of respect","Confused by a difficult problem","Surprised by something unexpected"],correct:"Surprised by something unexpected",explanation:"The term 'taken aback' is defined as being surprised by something unexpected."},
+  {question:"According to the vocabulary in the chapter, what does the expression 'sooner or later' mean?",options:["At sometime in the future","Increase or develop very quickly","Succeed or fail without help","Sometimes, occasionally"],correct:"At sometime in the future",explanation:"'Sooner or later' means that something is certain to happen at sometime in the future."}
+];
+ 
+let username='', questions=[], qIndex=0, score=0;
+const letters=["A","B","C","D"];
+const TTC_ASSETS = {
+  logo: 'https://i.postimg.cc/x9mDND2Q/Ttc-logo.png',
+  qr: 'https://i.postimg.cc/YCWwPPqN/TTC-qr.jpg',
+  watermark: 'https://i.postimg.cc/9F434kTW/ttc-watermark-png.png'
+};
+ 
+/* ════════════════════════
+   TRACKING ENGINE
+════════════════════════ */
+ 
+// 🚨 PASTE YOUR EXACT WEB APP URL HERE 🚨
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyzrJ7T76IeXnPwbqTqV8Mksc7JRnbaVBgbUXVeX1fBXLWtdxS6XOgr4wC0_LqILaGj/exec';
+ 
+let tabSwitches=0, wrongAnswers=[], answerLog=[], quizStartTime=0;
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden && qIndex > 0 && qIndex < (questions.length || 999)) tabSwitches++; });
+ 
+try { const sv = localStorage.getItem("ttc_name")||""; if(sv) document.getElementById("username").value=sv; } catch(e) {}
+document.getElementById("username").addEventListener("keydown",e=>{ if(e.key==="Enter") startWelcome(); });
+ 
+function shuffle(arr){ return [...arr].sort(()=>Math.random()-0.5); }
+function showScreen(id){ document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active")); const el=document.getElementById(id); el.classList.remove("active"); void el.offsetWidth; el.classList.add("active"); }
+function startWelcome(){
+  username=document.getElementById("username").value.trim();
+  if(!username){ const inp=document.getElementById("username"); inp.style.borderColor="var(--pink)"; inp.style.boxShadow="3px 3px 0 var(--pink)"; inp.placeholder="Please enter your name! 👆"; inp.focus(); return; }
+  try { localStorage.setItem("ttc_name",username); } catch(e) {}
+  document.getElementById("welcomeText").innerText="Let's go, "+username+"!";
+  showScreen("welcomeScreen");
+}
+function startQuiz(){ questions=shuffle(quizData); qIndex=0; score=0; wrongAnswers=[]; answerLog=[]; tabSwitches=0; quizStartTime=Date.now(); showScreen("quizScreen"); loadQuestion(); }
+function loadQuestion(){
+  const q=questions[qIndex], opts=shuffle([...q.options]);
+  document.getElementById("qCounter").innerText=`Q ${qIndex+1} / ${questions.length}`; document.getElementById("qScore").innerText=`Score: ${score}`;
+  document.getElementById("progressBar").style.width=((qIndex/questions.length)*100)+"%"; document.getElementById("question").innerText=q.question;
+  const container=document.getElementById("options"); container.innerHTML="";
+  opts.forEach((opt,i)=>{ const div=document.createElement("div"); div.className="option"; div.innerHTML=`<span class="option-letter">${letters[i]}</span><span class="opt-text">${opt}</span>`; div.onclick=()=>selectOption(div,opt,q); container.appendChild(div); });
+  document.getElementById("explBox").classList.remove("show"); document.getElementById("explText").innerText=""; document.getElementById("nextBtn").classList.add("hidden");
+}
+function selectOption(el,opt,q){
+  document.querySelectorAll(".option").forEach(o=>o.onclick=null);
+  const isCorrect = opt===q.correct;
+  answerLog.push({ questionNo: qIndex + 1, question: q.question, yourAnswer: opt, correct: q.correct, isCorrect: isCorrect, explanation: q.explanation || '' });
+  if(isCorrect){ el.classList.add("correct"); score++; confetti({particleCount:100,spread:70,origin:{y:0.55},colors:["#4361EE","#C8FF00","#FF3D8A","#FF6B35","#ffffff"]}); } 
+  else { el.classList.add("wrong"); document.querySelectorAll(".option").forEach(o=>{ if(o.querySelector(".opt-text")?.innerText.trim()===q.correct) o.classList.add("correct"); }); wrongAnswers.push({question: q.question, yourAnswer: opt, correct: q.correct, explanation: q.explanation || ''}); }
+  document.getElementById("explText").innerText=q.explanation; document.getElementById("explBox").classList.add("show");
+  document.getElementById("qScore").innerText=`Score: ${score}`; document.getElementById("nextBtn").classList.remove("hidden");
+}
+function nextQuestion(){ qIndex++; if(qIndex>=questions.length){ showResult(); return; } loadQuestion(); }
+function showResult(){
+  showScreen("resultScreen");
+  const total=questions.length, pct=Math.round((score/total)*100);
+  document.getElementById("scoreNum").innerText=score; document.getElementById("scoreDenom").innerText=`/${total}`; document.getElementById("scorePct").innerText=pct+"%";
+  let emoji,title,msg,chipText,pctBg;
+  if(pct>=90){ emoji="🔥";title="Absolutely Smashed It!";pctBg="#EAFFDA";msg="Perfect! Outstanding performance, "+username+". Top of the class!";chipText="✦ Outstanding"; }
+  else if(pct>=75){ emoji="💪";title="Really Well Done!";pctBg="#E0F0FF";msg="Strong performance, "+username+"! A little more practice and you'll be perfect.";chipText="✦ Well Done"; }
+  else if(pct>=50){ emoji="📚";title="Good Effort!";pctBg="#FFF8DC";msg="You're on the right track, "+username+". Keep revising and you'll ace it!";chipText="✦ Keep Going"; }
+  else { emoji="🧐";title="Time to Revise!";pctBg="#FFEAEA";msg="Don't worry, "+username+" — go through the chapters once more and try again!";chipText="✦ Try Again"; }
+  document.getElementById("fbEmoji").innerText=emoji; document.getElementById("fbTitle").innerText=title; document.getElementById("fbMsg").innerText=msg;
+  document.getElementById("resultChip").innerText=chipText; document.getElementById("scorePct").style.background=pctBg;
+  confetti({particleCount:180,spread:110,origin:{y:0.45},colors:["#4361EE","#C8FF00","#FF3D8A","#FF6B35","#ffffff"]});
+  sendToSheet(total, pct);
+}
+ 
+function sendToSheet(total, pct){
+  if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'PASTE_YOUR_WEB_APP_URL_HERE' || APPS_SCRIPT_URL.includes('YOUR_APPS_SCRIPT_URL_HERE')) {
+    alert("⚠️ Developer Alert: You forgot to paste your Web App URL into the Quiz code! Score will not save.");
+    return;
+  }
+ 
+  let attempt = 1;
+  try {
+    const attemptKey = 'ttc_att_' + subjectName + '_' + chapterName;
+    attempt = parseInt(localStorage.getItem(attemptKey) || '0') + 1;
+    localStorage.setItem(attemptKey, attempt);
+  } catch(e) {
+    // Silently ignore Edge tracking prevention
+  }
+ 
+  const payload = {
+    name: username,
+    subject: subjectName,
+    chapter: chapterName,
+    score: score,
+    total: total,
+    percentage: pct,
+    timeTaken: Math.round((Date.now() - quizStartTime) / 1000),
+    tabSwitches: tabSwitches,
+    attempt: attempt,
+    questionsAttempted: answerLog.length,
+    answerLog: answerLog,
+    wrongAnswers: wrongAnswers,
+    device: navigator.userAgent
+  };
+  
+  fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  }).catch(()=>{});
+}
+
+async function downloadStudentPdf(){
+  const total = questions.length || quizData.length;
+  const pct = total ? Math.round((score / total) * 100) : 0;
+  const report = {
+    title: 'Student Quiz Report',
+    name: username || 'Student',
+    subject: subjectName,
+    chapter: chapterName,
+    score: score,
+    total: total,
+    percentage: pct,
+    questionsAttempted: answerLog.length,
+    timeTaken: Math.round((Date.now() - quizStartTime) / 1000),
+    tabSwitches: tabSwitches,
+    attempt: getCurrentAttemptNo(),
+    timestamp: new Date().toLocaleString('en-IN'),
+    answers: answerLog
+  };
+  await createTtcQuizPdf(report, `TTC_${safePdfName(report.name)}_${safePdfName(report.chapter)}_Report.pdf`);
+}
+
+function getCurrentAttemptNo(){
+  try {
+    const attemptKey = 'ttc_att_' + subjectName + '_' + chapterName;
+    return parseInt(localStorage.getItem(attemptKey) || '1');
+  } catch(e) {
+    return 1;
+  }
+}
+
+async function createTtcQuizPdf(report, fileName){
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    alert('PDF maker is still loading. Please check your internet connection and try again.');
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const margin = 48;
+  const bottomLimit = pageH - 70;
+  const colors = {
+    ink: '#151721',
+    muted: '#697083',
+    soft: '#F6F7FB',
+    line: '#E5E8F0',
+    blue: '#2847D7',
+    orange: '#F36B2A',
+    green: '#138A45',
+    red: '#C7365C',
+    paleGreen: '#EAF8EF',
+    paleRed: '#FFF0F4'
+  };
+  const assets = await loadPdfAssets();
+  let y = 118;
+
+  function clean(value){
+    return String(value ?? '')
+      .replace(/[^\x09\x0A\x0D\x20-\x7E\u00A0-\u024F]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function pageBase(){
+    doc.setFillColor('#FFFFFF');
+    doc.rect(0, 0, pageW, pageH, 'F');
+    doc.setFillColor(colors.soft);
+    doc.rect(0, 0, pageW, 92, 'F');
+    doc.setDrawColor(colors.line);
+    doc.setLineWidth(1);
+    doc.line(margin, 92, pageW - margin, 92);
+    if (assets.logo) {
+      try { doc.addImage(assets.logo, 'PNG', margin, 22, 48, 48); } catch(e) { drawLogoFallback(); }
+    } else {
+      drawLogoFallback();
+    }
+    doc.setTextColor(colors.ink);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(24);
+    doc.text('TTC Quiz Results', margin + 64, 42);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
+    doc.setTextColor(colors.muted);
+    doc.text('Tushar Tuition Classes, Wardha', margin + 64, 62);
+    if (assets.qr) {
+      try { doc.addImage(assets.qr, 'JPEG', pageW - margin - 48, 22, 48, 48); } catch(e) {}
+    }
+  }
+
+  function drawLogoFallback(){
+    doc.setFillColor(colors.orange);
+    doc.circle(margin + 26, 46, 26, 'F');
+    doc.setTextColor('#FFFFFF');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.text('TTC', margin + 10, 51);
+  }
+
+  function newPage(){
+      doc.addPage();
+    pageBase();
+    y = 118;
+  }
+
+  function need(space){
+    if (y + space > bottomLimit) newPage();
+  }
+
+  function wrap(text, width, size, weight='normal'){
+    doc.setFont('helvetica', weight);
+    doc.setFontSize(size);
+    return doc.splitTextToSize(clean(text), width);
+  }
+
+  function drawInfoCard(label, value, x, boxY, w, h=64){
+    doc.setFillColor('#FFFFFF');
+    doc.roundedRect(x, boxY, w, h, 10, 10, 'F');
+    doc.setDrawColor(colors.line);
+    doc.roundedRect(x, boxY, w, h, 10, 10, 'S');
+    doc.setTextColor(colors.muted);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text(clean(label).toUpperCase(), x + 14, boxY + 21);
+    const lines = wrap(value, w - 28, 14, 'bold').slice(0, 2);
+    doc.setTextColor(colors.ink);
+    doc.setFontSize(14);
+    doc.text(lines, x + 14, boxY + 43);
+  }
+
+  function drawBadge(text, x, badgeY, fill, color){
+    doc.setFillColor(fill);
+    doc.roundedRect(x, badgeY, 84, 24, 12, 12, 'F');
+    doc.setTextColor(color);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text(text, x + 13, badgeY + 16);
+  }
+
+  function secondsToText(sec){
+    sec = parseInt(sec || 0);
+    return sec >= 60 ? `${Math.floor(sec / 60)}m ${sec % 60}s` : `${sec}s`;
+  }
+
+  function drawWatermarkAndFooters(){
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      if (assets.watermark) {
+        try {
+          doc.setGState(new doc.GState({ opacity: 0.035 }));
+          doc.addImage(assets.watermark, 'PNG', pageW / 2 - 190, 220, 380, 380);
+          doc.setGState(new doc.GState({ opacity: 1 }));
+        } catch(e) {}
+      }
+      doc.setDrawColor(colors.line);
+      doc.line(margin, pageH - 46, pageW - margin, pageH - 46);
+      doc.setTextColor(colors.muted);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.text('Generated by TTC Quiz System', margin, pageH - 26);
+      doc.text(`Page ${i} of ${totalPages}`, pageW - margin - 54, pageH - 26);
+    }
+  }
+
+  pageBase();
+
+  const subjectLine = clean(`${report.subject || ''}${report.chapter ? ' | ' + report.chapter : ''}`);
+  doc.setTextColor(colors.ink);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(22);
+  doc.text('Performance Summary', margin, y);
+  y += 18;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(12);
+  doc.setTextColor(colors.muted);
+  const subjectLines = wrap(subjectLine || 'Quiz Report', pageW - margin * 2, 12).slice(0, 3);
+  doc.text(subjectLines, margin, y);
+  y += subjectLines.length * 14 + 12;
+
+  doc.setFillColor(colors.ink);
+  doc.roundedRect(margin, y, pageW - margin * 2, 120, 16, 16, 'F');
+  doc.setTextColor('#FFFFFF');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(15);
+  doc.text('Student', margin + 24, y + 34);
+  doc.setFontSize(24);
+  doc.text(wrap(report.name || 'Unknown', 300, 24, 'bold').slice(0, 1), margin + 24, y + 65);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
+  doc.setTextColor('#C9CEDA');
+  doc.text(wrap(`Attempt #${report.attempt || 1} | ${clean(report.timestamp || 'Generated today')}`, 300, 11).slice(0, 1), margin + 24, y + 91);
+  doc.setTextColor('#FFFFFF');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(38);
+  doc.text(`${report.score}/${report.total}`, pageW - margin - 150, y + 56);
+  doc.setFontSize(14);
+  doc.setTextColor('#C9CEDA');
+  doc.text(`${report.percentage}% score`, pageW - margin - 150, y + 82);
+  y += 144;
+
+  const gap = 12;
+  const cardW = (pageW - margin * 2 - gap * 2) / 3;
+  drawInfoCard('Questions Attempted', `${report.questionsAttempted || 0}/${report.total || 0}`, margin, y, cardW);
+  drawInfoCard('Time Taken', secondsToText(report.timeTaken), margin + cardW + gap, y, cardW);
+  drawInfoCard('Tab Switches', report.tabSwitches || 0, margin + (cardW + gap) * 2, y, cardW);
+  y += 94;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.setTextColor(colors.ink);
+  doc.text('Question-wise Review', margin, y);
+  y += 24;
+
+  const answers = report.answers || [];
+  if (!answers.length) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(13);
+    doc.setTextColor(colors.muted);
+    doc.text(wrap('No detailed answer log was found for this attempt.', pageW - margin * 2, 13), margin, y);
+  }
+
+  answers.forEach((a, idx) => {
+    const boxW = pageW - margin * 2;
+    const contentX = margin + 22;
+    const textW = boxW - 44;
+    const qLines = wrap(a.question || '', textW - 104, 13, 'bold');
+    const yourLines = wrap(`Your answer: ${a.yourAnswer || '-'}`, textW, 11.5);
+    const correctLines = wrap(`Correct answer: ${a.correct || '-'}`, textW, 11.5);
+    const expLines = a.explanation ? wrap(`Explanation: ${a.explanation}`, textW, 11.2) : [];
+    const boxH = 82 + (qLines.length * 16) + (yourLines.length * 15) + (correctLines.length * 15) + (expLines.length * 14);
+    need(boxH + 16);
+    doc.setFillColor('#FFFFFF');
+    doc.roundedRect(margin, y, boxW, boxH, 12, 12, 'F');
+    doc.setFillColor(a.isCorrect ? colors.green : colors.red);
+    doc.roundedRect(margin, y, 6, boxH, 3, 3, 'F');
+    doc.setDrawColor(a.isCorrect ? '#25D366' : '#FF3D8A');
+    doc.setLineWidth(0.8);
+    doc.roundedRect(margin, y, boxW, boxH, 12, 12, 'S');
+    drawBadge(a.isCorrect ? 'CORRECT' : 'REVISE', pageW - margin - 104, y + 18, a.isCorrect ? colors.paleGreen : colors.paleRed, a.isCorrect ? colors.green : colors.red);
+    doc.setTextColor(colors.blue);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.text(`Question ${a.questionNo || idx + 1}`, contentX, y + 34);
+    doc.setTextColor(colors.ink);
+    doc.setFontSize(13);
+    doc.text(qLines, contentX, y + 58);
+    let rowY = y + 66 + qLines.length * 16;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11.5);
+    doc.setTextColor(colors.muted);
+    doc.text(yourLines, contentX, rowY);
+    rowY += yourLines.length * 15;
+    doc.setTextColor(colors.green);
+    doc.text(correctLines, contentX, rowY);
+    rowY += correctLines.length * 15;
+    if (expLines.length) {
+      doc.setTextColor(colors.muted);
+      doc.text(expLines, contentX, rowY);
+    }
+    y += boxH + 16;
+  });
+
+  drawWatermarkAndFooters();
+  doc.save(fileName || 'TTC_Quiz_Report.pdf');
+}
+
+async function loadPdfAssets(){
+  const entries = await Promise.all([
+    imageToDataUrl(TTC_ASSETS.logo),
+    imageToDataUrl(TTC_ASSETS.qr),
+    imageToDataUrl(TTC_ASSETS.watermark)
+  ]);
+  return { logo: entries[0], qr: entries[1], watermark: entries[2] };
+}
+
+async function imageToDataUrl(url){
+  try {
+    const res = await fetch(url, { mode: 'cors', cache: 'force-cache' });
+    if (!res.ok) throw new Error('Image failed');
+    const blob = await res.blob();
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch(e) {
+    return '';
+  }
+}
+
+function safePdfName(value){
+  return String(value || 'Quiz').replace(/[\\/:*?"<>|]+/g, '_').replace(/\s+/g, '_').slice(0, 60);
+}
+
+async function createTtcQuizPdf(report, fileName){
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    alert('PDF maker is still loading. Please check your internet connection and try again.');
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const colors = {
+    page: '#EAF6F6', header: '#4A90E2',
+    teal: '#207C78', tealDark: '#2F6FAF', tealSoft: '#DDF3EF',
+    cream: '#FFF8EF', mustard: '#F7B84B', white: '#FFFFFF',
+    ink: '#243447', body: '#64748B', line: '#E8DED2',
+    green: '#2E8B57', red: '#D95B72'
+  };
+  const assets = await loadPdfAssets();
+  const panelX = 30, panelW = pageW - 60, firstPanelY = 118, otherPanelY = 38;
+  const contentX = 58, bottomLimit = pageH - 82;
+  let y = 0;
+
+  function clean(value){ return String(value ?? '').replace(/[^\x09\x0A\x0D\x20-\x7E\u00A0-\u024F]/g, '').replace(/\s+/g, ' ').trim(); }
+  function wrap(text, width, size, weight='normal'){ doc.setFont('helvetica', weight); doc.setFontSize(size); return doc.splitTextToSize(clean(text), width); }
+  function withOpacity(opacity, draw){ let used=false; try{ doc.setGState(new doc.GState({ opacity })); used=true; }catch(e){} draw(); if(used){ try{ doc.setGState(new doc.GState({ opacity: 1 })); }catch(e){} } }
+  function drawImage(asset, x, imgY, w, h){ if(!asset || !asset.data) return; try{ doc.addImage(asset.data, asset.type || 'PNG', x, imgY, w, h); }catch(e){} }
+  function drawImageContain(asset, cx, cy, maxW, maxH){ if(!asset || !asset.data) return; const scale=Math.min(maxW/(asset.width||maxW), maxH/(asset.height||maxH)); const w=(asset.width||maxW)*scale, h=(asset.height||maxH)*scale; drawImage(asset, cx-w/2, cy-h/2, w, h); }
+  function secondsToText(sec){ sec=parseInt(sec||0); return sec>=60 ? `${Math.floor(sec/60)}m ${sec%60}s` : `${sec}s`; }
+
+  function pageBase(firstPage=false){
+    const panelY = firstPage ? firstPanelY : otherPanelY;
+    const panelH = pageH - panelY - 50;
+    doc.setFillColor(colors.page); doc.rect(0, 0, pageW, pageH, 'F');
+    if (firstPage) { doc.setFillColor(colors.header); doc.rect(0, 0, pageW, 98, 'F'); }
+    doc.setFillColor(colors.cream); doc.roundedRect(panelX, panelY, panelW, panelH, 24, 24, 'F');
+    if (firstPage) {
+      drawImage(assets.logo, 48, 24, 52, 52);
+      doc.setTextColor(colors.white); doc.setFont('helvetica', 'bold'); doc.setFontSize(30); doc.text('TTC Quiz Results', 116, 48);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(13); doc.text('Tushar Tuition Classes, Wardha', 118, 70);
+      drawImage(assets.qr, pageW - 98, 25, 52, 52);
+    }
+  }
+  function drawFootersAndWatermark(){
+    const pages = doc.internal.getNumberOfPages();
+    for(let i=1;i<=pages;i++){
+      doc.setPage(i);
+      withOpacity(0.07, () => drawImageContain(assets.watermark, pageW/2, pageH/2 + 35, 350, 210));
+      doc.setTextColor('#6E8398'); doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+      doc.text(`Page ${i} of ${pages}`, pageW - 92, pageH - 24);
+      doc.text('Generated by TTC Quiz System', 48, pageH - 24);
+    }
+  }
+  function newPage(){ doc.addPage(); pageBase(false); y = 76; }
+  function need(height){ if(y + height > bottomLimit) newPage(); }
+  function statCard(label, value, x, statY, w){
+    doc.setFillColor(colors.white); doc.roundedRect(x, statY, w, 70, 16, 16, 'F');
+    doc.setTextColor(colors.teal); doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.text(clean(label).toUpperCase(), x+18, statY+24);
+    doc.setTextColor(colors.ink); doc.setFontSize(19); doc.text(wrap(value, w-36, 19, 'bold').slice(0,1), x+18, statY+52);
+  }
+
+  pageBase(true); y = 150;
+  const subjectLine = clean(`${report.subject || ''}${report.chapter ? ' | ' + report.chapter : ''}`);
+  doc.setTextColor(colors.ink); doc.setFont('helvetica', 'bold'); doc.setFontSize(24); doc.text('Performance Summary', contentX, y);
+  y += 22;
+  doc.setTextColor(colors.body); doc.setFont('helvetica', 'normal'); doc.setFontSize(14);
+  const subjectLines = wrap(subjectLine || 'Quiz Report', panelW - 56, 14).slice(0,3);
+  doc.text(subjectLines, contentX, y); y += subjectLines.length * 17 + 18;
+
+  doc.setFillColor(colors.white); doc.roundedRect(contentX, y, panelW - 56, 126, 22, 22, 'F');
+  doc.setFillColor(colors.mustard); doc.roundedRect(contentX, y+18, 148, 90, 18, 18, 'F');
+  doc.setTextColor(colors.teal); doc.setFont('helvetica', 'bold'); doc.setFontSize(20); doc.text('Score', contentX+24, y+47);
+  doc.setFontSize(34); doc.text(`${report.score}/${report.total}`, contentX+24, y+86);
+  doc.setTextColor(colors.ink); doc.setFontSize(16); doc.text('Student', contentX+178, y+40);
+  doc.setFontSize(24); doc.text(wrap(report.name || 'Unknown', 260, 24, 'bold').slice(0,1), contentX+178, y+72);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(13); doc.setTextColor(colors.body);
+  doc.text(wrap(`Attempt #${report.attempt || 1} | ${clean(report.timestamp || 'Generated today')}`, 280, 13).slice(0,2), contentX+178, y+98);
+  y += 154;
+
+  const gap = 14, statW = (panelW - 56 - gap * 2) / 3;
+  statCard('Percentage', `${report.percentage}%`, contentX, y, statW);
+  statCard('Attempted', `${report.questionsAttempted || 0}/${report.total || 0}`, contentX + statW + gap, y, statW);
+  statCard('Time', secondsToText(report.timeTaken), contentX + (statW + gap) * 2, y, statW);
+  y += 100;
+
+  doc.setTextColor(colors.ink); doc.setFont('helvetica', 'bold'); doc.setFontSize(23); doc.text('Question Review', contentX, y); y += 32;
+  const answers = report.answers || [];
+  if(!answers.length){ doc.setTextColor(colors.body); doc.setFont('helvetica', 'normal'); doc.setFontSize(15); doc.text(wrap('No detailed answer log was found for this attempt.', panelW - 76, 15), contentX, y); }
+
+  answers.forEach((a, idx) => {
+    const cardX = contentX + 64, tabX = contentX + 6, cardW = panelW - 126, textX = cardX + 36, textW = cardW - 72;
+    const qLines = wrap(a.question || '', textW - 92, 16, 'bold');
+    const yourLines = wrap(`Your answer: ${a.yourAnswer || '-'}`, textW, 14);
+    const correctLines = wrap(`Correct answer: ${a.correct || '-'}`, textW, 14);
+    const expLines = a.explanation ? wrap(`Explanation: ${a.explanation}`, textW, 13.5) : [];
+    const cardH = Math.max(154, 82 + qLines.length*20 + yourLines.length*18 + correctLines.length*18 + expLines.length*17);
+    need(cardH + 26);
+    doc.setFillColor(colors.mustard); doc.roundedRect(tabX, y+20, 164, cardH-34, 18, 18, 'F');
+    doc.setTextColor(colors.teal); doc.setFont('helvetica', 'bold'); doc.setFontSize(32); doc.text(`${a.questionNo || idx + 1}.`, tabX+18, y + cardH/2 + 12);
+    doc.setFillColor(colors.white); doc.roundedRect(cardX, y, cardW, cardH, 20, 20, 'F');
+    doc.setDrawColor(colors.line); doc.setLineWidth(0.8); doc.roundedRect(cardX, y, cardW, cardH, 20, 20, 'S');
+    doc.setFillColor(a.isCorrect ? colors.green : colors.red); doc.roundedRect(cardX + cardW - 104, y + 26, 82, 30, 15, 15, 'F');
+    doc.setTextColor(colors.white); doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.text(a.isCorrect ? 'Correct' : 'Revise', cardX + cardW - 90, y + 45);
+    doc.setTextColor(colors.teal); doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.text(qLines, textX, y + 38);
+    let rowY = y + 50 + qLines.length * 20;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(14); doc.setTextColor(colors.body); doc.text(yourLines, textX, rowY);
+    rowY += yourLines.length * 18;
+    doc.setTextColor(colors.green); doc.text(correctLines, textX, rowY);
+    rowY += correctLines.length * 18;
+    if(expLines.length){ doc.setTextColor(colors.body); doc.setFontSize(13.5); doc.text(expLines, textX, rowY); }
+    y += cardH + 26;
+  });
+
+  drawFootersAndWatermark();
+  doc.save(fileName || 'TTC_Quiz_Report.pdf');
+}
+
+async function loadPdfAssets(){
+  const entries = await Promise.all([imageToAsset(TTC_ASSETS.logo), imageToAsset(TTC_ASSETS.qr), imageToAsset(TTC_ASSETS.watermark)]);
+  return { logo: entries[0], qr: entries[1], watermark: entries[2] };
+}
+
+async function imageToAsset(url){
+  try {
+    const res = await fetch(url, { mode: 'cors', cache: 'force-cache' });
+    if(!res.ok) throw new Error('Image failed');
+    const blob = await res.blob();
+    const data = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+    const size = await new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => resolve({ width: img.naturalWidth || 1, height: img.naturalHeight || 1 });
+      img.onerror = () => resolve({ width: 1, height: 1 });
+      img.src = data;
+    });
+    return { data, width: size.width, height: size.height, type: blob.type && blob.type.includes('jpeg') ? 'JPEG' : 'PNG' };
+  } catch(e) {
+    return null;
+  }
+}
+ 
+function shareWhatsApp(){ const msg=`🎓 *TTC Quiz Result*\n\n👤 *Student:* ${username}\n📘 *Subject:* ${subjectName}\n📖 *Chapter:* ${chapterName}\n🏆 *Score:* ${score}/${questions.length}\n\n_Tushar Tuition Classes, Wardha_ 📚`; window.open("https://wa.me/?text="+encodeURIComponent(msg)); }
+function restartQuiz(){ location.reload(); }
+document.getElementById("ratingBtn").addEventListener("click",function(){
+  for(let i=0;i<16;i++){ const s=document.createElement("span"); s.className="sburst"; s.innerText=["★","✦","●","▲"][Math.floor(Math.random()*4)]; s.style.color=["#C8FF00","#FF6B35","#4361EE","#FF3D8A"][Math.floor(Math.random()*4)]; s.style.setProperty("--bx",(Math.random()*160-80)+"px"); s.style.setProperty("--by",(Math.random()*-150)+"px"); s.style.left=(35+Math.random()*30)+"%"; s.style.top="50%"; this.appendChild(s); setTimeout(()=>s.remove(),750); }
+  setTimeout(()=>window.open("https://g.page/r/CdUkswJ0ZulAEBE/review"),320);
+});
+</script>
+</body>
+</html>
